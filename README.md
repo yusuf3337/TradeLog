@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://lucide.dev/icons/trending-up.svg" alt="TradeJournal Logo" width="80" height="80" />
+  <img src="./public/logo.png" alt="TradeJournal Logo" width="380" height="380" />
 
   # TradeJournal 🚀
 
