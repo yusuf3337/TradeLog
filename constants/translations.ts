@@ -116,7 +116,17 @@ export const TRANSLATIONS = {
     applyToTrade: "Bu Lot İle İşlem Oluştur",
     searchPlaceholder: "Sembol, strateji veya not ara...",
     viewChart: "Grafik Ön İzleme",
-    openInNewTab: "Yeni Sekmede Aç"
+    openInNewTab: "Yeni Sekmede Aç",
+    sessionTitle: "Piyasa Seansları & Saatlik Performans",
+    sessionDesc: "Hangi zaman diliminde ve saat aralığında daha başarılı olduğunuzu keşfedin.",
+    asiaSession: "Asya Seansı (00:00 - 08:00)",
+    londonSession: "Londra Seansı (08:00 - 13:00)",
+    nyAmSession: "NY Açılış / Overlap (13:00 - 17:00)",
+    nyPmSession: "NY Kapanış (17:00 - 22:00)",
+    nightSession: "Gece / Diğer (22:00 - 00:00)",
+    bestSessionBadge: "En Kârlı Seans",
+    hourlyDistribution: "Saatlik Kâr / Zarar Dağılımı (24 Saat)",
+    noTimeData: "Zaman bilgisi girilmemiş işlem"
   },
   en: {
     appTitle: "TradeJournal",
@@ -235,7 +245,17 @@ export const TRANSLATIONS = {
     applyToTrade: "Create Trade With This Lot",
     searchPlaceholder: "Search symbol, setup or notes...",
     viewChart: "Chart Preview",
-    openInNewTab: "Open in New Tab"
+    openInNewTab: "Open in New Tab",
+    sessionTitle: "Market Sessions & Hourly Performance",
+    sessionDesc: "Discover which trading sessions and hours yield your highest performance.",
+    asiaSession: "Asia Session (00:00 - 08:00)",
+    londonSession: "London Session (08:00 - 13:00)",
+    nyAmSession: "NY Open / Overlap (13:00 - 17:00)",
+    nyPmSession: "NY Close (17:00 - 22:00)",
+    nightSession: "Night / Off-Hours (22:00 - 00:00)",
+    bestSessionBadge: "Top Performing Session",
+    hourlyDistribution: "24-Hour PnL Distribution",
+    noTimeData: "Trades without timestamp"
   }
 };
 

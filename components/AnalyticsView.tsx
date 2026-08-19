@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from 'react';
-import { BarChart3, TrendingUp, Zap, CheckCircle2, AlertTriangle, Award, PieChart } from 'lucide-react';
+import { BarChart3, TrendingUp, Zap, CheckCircle2, AlertTriangle, Award, PieChart, Clock, Globe, Sun, Moon } from 'lucide-react';
 import { TRANSLATIONS } from '@/constants/translations';
 import { Trade, AccountType } from '@/types/trade';
 
@@ -95,6 +95,79 @@ export default function AnalyticsView({
     })).sort((a, b) => b.pnl - a.pnl);
   }, [filteredTrades]);
 
+  const sessionStats = useMemo(() => {
+    const sessions = [
+      { id: 'asia', name: t.asiaSession, icon: Globe, range: [0, 8], colorClass: 'border-indigo-500/20 text-indigo-500 bg-indigo-500/10' },
+      { id: 'london', name: t.londonSession, icon: Sun, range: [8, 13], colorClass: 'border-amber-500/20 text-amber-500 bg-amber-500/10' },
+      { id: 'nyAm', name: t.nyAmSession, icon: Zap, range: [13, 17], colorClass: 'border-cyan-500/20 text-cyan-500 bg-cyan-500/10' },
+      { id: 'nyPm', name: t.nyPmSession, icon: Clock, range: [17, 22], colorClass: 'border-purple-500/20 text-purple-500 bg-purple-500/10' },
+      { id: 'night', name: t.nightSession, icon: Moon, range: [22, 24], colorClass: 'border-zinc-500/20 text-zinc-400 bg-zinc-500/10' }
+    ];
+
+    const stats = sessions.map(s => {
+      const tradesInSession = filteredTrades.filter(tr => {
+        if (!tr.time) return false;
+        const hour = parseInt(tr.time.split(':')[0], 10);
+        if (isNaN(hour)) return false;
+        return hour >= s.range[0] && hour < s.range[1];
+      });
+
+      const count = tradesInSession.length;
+      const winCount = tradesInSession.filter(tr => tr.result === 'Win').length;
+      const winRate = count > 0 ? Math.round((winCount / count) * 100) : 0;
+      const pnl = tradesInSession.reduce((acc, curr) => acc + (curr.result === 'Win' ? Math.abs(curr.pnl) : (curr.result === 'Loss' ? -Math.abs(curr.pnl) : 0)), 0);
+
+      return {
+        ...s,
+        count,
+        winCount,
+        winRate,
+        pnl
+      };
+    });
+
+    let bestSessionId = '';
+    let maxPnL = -Infinity;
+    stats.forEach(s => {
+      if (s.count > 0 && s.pnl > maxPnL) {
+        maxPnL = s.pnl;
+        bestSessionId = s.id;
+      }
+    });
+
+    return stats.map(s => ({
+      ...s,
+      isBest: s.id === bestSessionId && maxPnL > 0
+    }));
+  }, [filteredTrades, t]);
+
+  const hourlyStats = useMemo(() => {
+    const hours = Array.from({ length: 24 }, (_, i) => {
+      const hourStr = i.toString().padStart(2, '0');
+      const tradesInHour = filteredTrades.filter(tr => {
+        if (!tr.time) return false;
+        const hour = parseInt(tr.time.split(':')[0], 10);
+        return hour === i;
+      });
+
+      const count = tradesInHour.length;
+      const winCount = tradesInHour.filter(tr => tr.result === 'Win').length;
+      const winRate = count > 0 ? Math.round((winCount / count) * 100) : 0;
+      const pnl = tradesInHour.reduce((acc, curr) => acc + (curr.result === 'Win' ? Math.abs(curr.pnl) : (curr.result === 'Loss' ? -Math.abs(curr.pnl) : 0)), 0);
+
+      return {
+        hour: i,
+        label: `${hourStr}:00`,
+        count,
+        winRate,
+        pnl
+      };
+    });
+
+    const maxAbsPnL = Math.max(1, ...hours.map(h => Math.abs(h.pnl)));
+    return { hours, maxAbsPnL };
+  }, [filteredTrades]);
+
   return (
     <div className="flex flex-col gap-8">
       
@@ -152,7 +225,7 @@ export default function AnalyticsView({
           </div>
         ) : (
           <div className="w-full overflow-x-auto">
-            <div className="min-w-[600px] h-[260px] relative">
+            <div className="min-w-150 h-65 relative">
               <svg className="w-full h-full overflow-visible" viewBox="0 0 800 240" preserveAspectRatio="none">
                 <defs>
                   <linearGradient id="equityGrad" x1="0" y1="0" x2="0" y2="1">
@@ -201,7 +274,104 @@ export default function AnalyticsView({
         )}
       </div>
 
-      {/* 2. DİSİPLİN KARTLARI & DUYGU DURUMU KIRILIMI */}
+      {/* 2. SEANS & SAATLİK PERFORMANS ANALİZİ */}
+      <div className="bg-bg-panel border border-border-main rounded-3xl p-6 shadow-xl space-y-6">
+        <div>
+          <h3 className="text-base font-medium text-text-main flex items-center gap-2 mb-1">
+            <Clock className="w-5 h-5 text-indigo-500" /> {t.sessionTitle}
+          </h3>
+          <p className="text-xs text-text-muted">{t.sessionDesc}</p>
+        </div>
+
+        {/* Seans Kartları Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          {sessionStats.map(s => {
+            const IconComp = s.icon;
+            return (
+              <div
+                key={s.id}
+                className={`bg-bg-app border rounded-2xl p-4 flex flex-col justify-between transition-all relative ${
+                  s.isBest ? 'border-emerald-500/50 shadow-lg shadow-emerald-500/10 ring-1 ring-emerald-500/30' : 'border-border-main'
+                }`}
+              >
+                {s.isBest && (
+                  <div className="absolute -top-2.5 right-3 bg-emerald-500 text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1">
+                    <Award className="w-3 h-3" /> {t.bestSessionBadge}
+                  </div>
+                )}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 ${s.colorClass}`}>
+                      <IconComp className="w-4 h-4" />
+                    </div>
+                    <span className="text-xs font-semibold text-text-main truncate">{s.name}</span>
+                  </div>
+                  <div className="text-[11px] text-text-muted flex items-center gap-2">
+                    <span>{s.count} {t.tradesCount}</span>
+                    <span>•</span>
+                    <span className="text-indigo-500 font-medium">% {s.winRate} Win</span>
+                  </div>
+                </div>
+
+                <div className="mt-3 pt-3 border-t border-border-main/50 flex items-center justify-between">
+                  <span className="text-[10px] text-text-muted uppercase">Net PnL</span>
+                  <span className={`font-mono text-sm font-bold ${s.pnl > 0 ? 'text-emerald-500' : s.pnl < 0 ? 'text-rose-500' : 'text-text-muted'}`}>
+                    {s.pnl > 0 ? '+' : ''}${s.pnl.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 24-Saatlik PnL Dağılım Çubuğu */}
+        <div className="pt-2">
+          <h4 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-4 flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-text-muted" /> {t.hourlyDistribution}
+          </h4>
+
+          <div className="w-full overflow-x-auto custom-scrollbar pb-2">
+            <div className="min-w-160 flex items-end gap-1.5 h-36 bg-bg-app border border-border-main rounded-2xl p-4">
+              {hourlyStats.hours.map(h => {
+                const heightPct = h.pnl !== 0 ? Math.max(12, Math.round((Math.abs(h.pnl) / hourlyStats.maxAbsPnL) * 100)) : 6;
+                const isPositive = h.pnl > 0;
+                const isNegative = h.pnl < 0;
+
+                return (
+                  <div key={h.hour} className="flex-1 flex flex-col items-center gap-1 group relative">
+                    {/* Hover Tooltip */}
+                    <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-black/90 text-white text-[10px] px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-20 shadow-xl border border-border-main font-mono text-center">
+                      <div className="font-bold">{h.label} ({h.count} işlem)</div>
+                      <div className={isPositive ? 'text-emerald-400' : isNegative ? 'text-rose-400' : 'text-zinc-400'}>
+                        {h.pnl > 0 ? '+' : ''}${h.pnl.toLocaleString()} (%{h.winRate} Win)
+                      </div>
+                    </div>
+
+                    {/* Bar */}
+                    <div className="w-full flex items-end justify-center h-24">
+                      <div
+                        style={{ height: `${heightPct}%` }}
+                        className={`w-full max-w-4.5 rounded-t-md transition-all group-hover:brightness-125 ${
+                          isPositive ? 'bg-emerald-500 shadow-xs shadow-emerald-500/20' :
+                          isNegative ? 'bg-rose-500 shadow-xs shadow-rose-500/20' :
+                          (h.count > 0 ? 'bg-zinc-500' : 'bg-border-main/40')
+                        }`}
+                      ></div>
+                    </div>
+
+                    {/* Label */}
+                    <span className={`text-[9px] font-mono ${h.count > 0 ? 'text-text-main font-semibold' : 'text-text-muted/40'}`}>
+                      {h.hour}h
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. DİSİPLİN KARTLARI & DUYGU DURUMU KIRILIMI */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Disiplin / Sadakat Kıyaslaması */}
@@ -258,7 +428,7 @@ export default function AnalyticsView({
         </div>
       </div>
 
-      {/* 3. DUYGU DURUMU PERFORMANSI */}
+      {/* 4. DUYGU DURUMU PERFORMANSI */}
       <div className="bg-bg-panel border border-border-main rounded-3xl p-6 shadow-xl">
         <h3 className="text-base font-medium text-text-main flex items-center gap-2 mb-1">
           <PieChart className="w-5 h-5 text-cyan-500" /> {t.emotionTitle}
