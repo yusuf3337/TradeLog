@@ -276,27 +276,27 @@ export default function TradeJournal() {
   const handleEdit = (trade: Trade) => {
     setEditingTradeId(trade.id);
     setFormData({
-      date: trade.date,
-      time: trade.time || '',
-      symbol: trade.symbol,
-      direction: trade.direction,
-      type: trade.type,
-      account: trade.account,
-      entryPrice: trade.entryPrice?.toString() || '',
-      stopLoss: trade.stopLoss?.toString() || '',
-      takeProfit: trade.takeProfit?.toString() || '',
-      lotSize: trade.lotSize?.toString() || '',
-      riskPercent: trade.riskPercent?.toString() || '',
-      result: trade.result,
-      rr: trade.rr.toString(),
-      targetRr: trade.targetRr.toString(),
-      pnl: trade.pnl.toString(),
-      setup: trade.setup,
+      date: trade.date || new Date().toISOString().split('T')[0],
+      time: trade.time || new Date().toTimeString().split(' ')[0].slice(0, 5),
+      symbol: trade.symbol || '',
+      direction: trade.direction || 'Long',
+      type: trade.type || 'Day Trade',
+      account: trade.account || 'Kişisel',
+      entryPrice: trade.entryPrice !== undefined && trade.entryPrice !== null ? trade.entryPrice.toString() : '',
+      stopLoss: trade.stopLoss !== undefined && trade.stopLoss !== null ? trade.stopLoss.toString() : '',
+      takeProfit: trade.takeProfit !== undefined && trade.takeProfit !== null ? trade.takeProfit.toString() : '',
+      lotSize: trade.lotSize !== undefined && trade.lotSize !== null ? trade.lotSize.toString() : '',
+      riskPercent: trade.riskPercent !== undefined && trade.riskPercent !== null ? trade.riskPercent.toString() : '',
+      result: trade.result || 'Win',
+      rr: trade.rr !== undefined && trade.rr !== null ? trade.rr.toString() : '',
+      targetRr: trade.targetRr !== undefined && trade.targetRr !== null ? trade.targetRr.toString() : '',
+      pnl: trade.pnl !== undefined && trade.pnl !== null ? trade.pnl.toString() : '',
+      setup: trade.setup || '',
       imageUrl: trade.imageUrl || '',
-      notes: trade.notes,
-      followedPlan: trade.followedPlan,
+      notes: trade.notes || '',
+      followedPlan: trade.followedPlan ?? true,
     });
-    setSelectedPsy(trade.psychology);
+    setSelectedPsy(trade.psychology || []);
     setIsDrawerOpen(true);
   };
 
@@ -306,23 +306,25 @@ export default function TradeJournal() {
       return;
     }
 
+    const currentId = editingTradeId || uuidv4();
+
     const newTrade: Trade = {
-      id: editingTradeId || uuidv4(),
+      id: currentId,
       date: formData.date,
       time: formData.time,
-      symbol: formData.symbol.toUpperCase(),
+      symbol: formData.symbol.toUpperCase().trim(),
       direction: formData.direction,
       type: formData.type,
       account: formData.account,
-      entryPrice: formData.entryPrice ? parseFloat(formData.entryPrice) : undefined,
-      stopLoss: formData.stopLoss ? parseFloat(formData.stopLoss) : undefined,
-      takeProfit: formData.takeProfit ? parseFloat(formData.takeProfit) : undefined,
-      lotSize: formData.lotSize ? parseFloat(formData.lotSize) : undefined,
-      riskPercent: formData.riskPercent ? parseFloat(formData.riskPercent) : undefined,
+      entryPrice: formData.entryPrice !== '' && !isNaN(parseFloat(formData.entryPrice)) ? parseFloat(formData.entryPrice) : undefined,
+      stopLoss: formData.stopLoss !== '' && !isNaN(parseFloat(formData.stopLoss)) ? parseFloat(formData.stopLoss) : undefined,
+      takeProfit: formData.takeProfit !== '' && !isNaN(parseFloat(formData.takeProfit)) ? parseFloat(formData.takeProfit) : undefined,
+      lotSize: formData.lotSize !== '' && !isNaN(parseFloat(formData.lotSize)) ? parseFloat(formData.lotSize) : undefined,
+      riskPercent: formData.riskPercent !== '' && !isNaN(parseFloat(formData.riskPercent)) ? parseFloat(formData.riskPercent) : undefined,
       result: formData.result,
-      rr: parseFloat(formData.rr || '0'),
-      targetRr: parseFloat(formData.targetRr || '0'),
-      pnl: parseFloat(formData.pnl || '0'),
+      rr: formData.rr !== '' && !isNaN(parseFloat(formData.rr)) ? parseFloat(formData.rr) : 0,
+      targetRr: formData.targetRr !== '' && !isNaN(parseFloat(formData.targetRr)) ? parseFloat(formData.targetRr) : 0,
+      pnl: formData.pnl !== '' && !isNaN(parseFloat(formData.pnl)) ? parseFloat(formData.pnl) : 0,
       setup: formData.setup,
       imageUrl: formData.imageUrl,
       notes: formData.notes,
@@ -330,7 +332,7 @@ export default function TradeJournal() {
       psychology: selectedPsy,
     };
 
-    let updatedTrades;
+    let updatedTrades: Trade[];
     if (editingTradeId) {
       updatedTrades = trades.map(tr => tr.id === editingTradeId ? newTrade : tr);
     } else {
@@ -542,7 +544,7 @@ export default function TradeJournal() {
   const totalTrades = filteredTrades.length;
   const winTrades = filteredTrades.filter(tr => tr.result === 'Win').length;
   const winRate = totalTrades > 0 ? Math.round((winTrades / totalTrades) * 100) : 0;
-  const totalRR = filteredTrades.reduce((acc, curr) => acc + (curr.result === 'Win' ? curr.rr : (curr.result === 'Loss' ? -curr.targetRr : 0)), 0);
+  const totalRR = filteredTrades.reduce((acc, curr) => acc + (curr.result === 'Win' ? curr.rr : (curr.result === 'Loss' ? -(curr.rr > 0 ? curr.rr : 1) : 0)), 0);
   const totalPnL = filteredTrades.reduce((acc, curr) => acc + (curr.result === 'Win' ? Math.abs(curr.pnl) : (curr.result === 'Loss' ? -Math.abs(curr.pnl) : 0)), 0);
 
   const today = new Date().toISOString().split('T')[0];
@@ -621,6 +623,8 @@ export default function TradeJournal() {
               trades={trades}
               filteredTrades={filteredTrades}
               openNewTradeForDay={openNewTradeForDay}
+              handleEdit={handleEdit}
+              handleDelete={handleDelete}
             />
           )}
 
@@ -641,6 +645,8 @@ export default function TradeJournal() {
               setFilterType={setFilterType}
               filteredTrades={filteredTrades}
               setSelectedImagePreview={setSelectedImagePreview}
+              handleEdit={handleEdit}
+              handleDelete={handleDelete}
             />
           )}
 

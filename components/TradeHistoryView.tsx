@@ -1,6 +1,6 @@
 "use client";
 
-import { List, ArrowUpRight, ArrowDownRight, Briefcase, FlaskConical, Activity, Clock, CheckCircle2, AlertTriangle, ImageIcon } from 'lucide-react';
+import { List, ArrowUpRight, ArrowDownRight, Briefcase, FlaskConical, Activity, Clock, CheckCircle2, AlertTriangle, ImageIcon, Pencil, Trash2 } from 'lucide-react';
 import { TRANSLATIONS } from '@/constants/translations';
 import { Trade, TradeType } from '@/types/trade';
 
@@ -10,6 +10,8 @@ interface TradeHistoryViewProps {
   setFilterType: (type: 'Tümü' | TradeType) => void;
   filteredTrades: Trade[];
   setSelectedImagePreview: (url: string | null) => void;
+  handleEdit: (trade: Trade) => void;
+  handleDelete: (id: string) => void;
 }
 
 export default function TradeHistoryView({
@@ -17,7 +19,9 @@ export default function TradeHistoryView({
   filterType,
   setFilterType,
   filteredTrades,
-  setSelectedImagePreview
+  setSelectedImagePreview,
+  handleEdit,
+  handleDelete
 }: TradeHistoryViewProps) {
   const t = TRANSLATIONS[lang];
 
@@ -113,7 +117,7 @@ export default function TradeHistoryView({
                 <div>
                   <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1 text-center xl:text-left">{t.rrResult}</div>
                   <div className={`text-base font-medium text-center xl:text-left ${trade.result === 'Win' ? 'text-emerald-500' : trade.result === 'Loss' ? 'text-rose-500' : 'text-text-muted'}`}>
-                    {trade.result === 'Loss' ? `-${trade.targetRr}R` : trade.result === 'Win' ? `+${trade.rr}R` : '0R'}
+                    {trade.result === 'Loss' ? `-${trade.rr > 0 ? trade.rr : 1}R` : trade.result === 'Win' ? `+${trade.rr}R` : '0R'}
                   </div>
                 </div>
                 <div>
@@ -155,6 +159,13 @@ export default function TradeHistoryView({
                         <ImageIcon className="w-4 h-4" />
                       </button>
                     )}
+
+                    <button onClick={() => handleEdit(trade)} className="text-text-muted hover:text-indigo-500 transition-colors p-2 bg-bg-hover rounded-lg hover:bg-border-hover" title={t.editTrade}>
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => handleDelete(trade.id)} className="text-text-muted hover:text-rose-500 transition-colors p-2 bg-bg-hover rounded-lg hover:bg-rose-500/10">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               </div>

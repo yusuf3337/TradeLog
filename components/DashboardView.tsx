@@ -200,7 +200,7 @@ export default function DashboardView({
                 <div>
                   <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1 text-center xl:text-left">{t.rrResult}</div>
                   <div className={`text-base font-medium text-center xl:text-left ${trade.result === 'Win' ? 'text-emerald-500' : trade.result === 'Loss' ? 'text-rose-500' : 'text-text-muted'}`}>
-                    {trade.result === 'Loss' ? `-${trade.targetRr}R` : trade.result === 'Win' ? `+${trade.rr}R` : '0R'}
+                    {trade.result === 'Loss' ? `-${trade.rr > 0 ? trade.rr : 1}R` : trade.result === 'Win' ? `+${trade.rr}R` : '0R'}
                   </div>
                 </div>
                 <div>

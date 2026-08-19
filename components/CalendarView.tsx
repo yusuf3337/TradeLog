@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, RotateCcw, X, Plus, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, RotateCcw, X, Plus, ArrowUpRight, ArrowDownRight, Pencil, Trash2 } from 'lucide-react';
 import { TRANSLATIONS, MONTH_NAMES, WEEKDAY_NAMES } from '@/constants/translations';
 import { Trade } from '@/types/trade';
 
@@ -10,13 +10,17 @@ interface CalendarViewProps {
   trades: Trade[];
   filteredTrades: Trade[];
   openNewTradeForDay: (dateStr: string) => void;
+  handleEdit: (trade: Trade) => void;
+  handleDelete: (id: string) => void;
 }
 
 export default function CalendarView({
   lang,
   trades,
   filteredTrades,
-  openNewTradeForDay
+  openNewTradeForDay,
+  handleEdit,
+  handleDelete
 }: CalendarViewProps) {
   const t = TRANSLATIONS[lang];
 
@@ -345,16 +349,37 @@ export default function CalendarView({
                         </span>
                       </div>
                       <div className="text-xs text-text-muted font-mono truncate">
-                        {trade.time} | Lot: {trade.lotSize || '-'} | RR: {trade.result === 'Loss' ? `-${trade.targetRr}` : `+${trade.rr}`}R | Tarz: {trade.type}
+                        {trade.time} | Lot: {trade.lotSize || '-'} | RR: {trade.result === 'Loss' ? `-${trade.rr > 0 ? trade.rr : 1}` : `+${trade.rr}`}R | Tarz: {trade.type}
                       </div>
                     </div>
                   </div>
 
-                  <div className="text-right shrink-0">
-                    <div className={`text-base font-semibold font-mono ${trade.result === 'Win' ? 'text-emerald-500' : trade.result === 'Loss' ? 'text-rose-500' : 'text-zinc-400'}`}>
-                      {trade.result === 'Loss' ? `-$${Math.abs(trade.pnl)}` : trade.result === 'Win' ? `+$${Math.abs(trade.pnl)}` : '$0'}
+                  <div className="flex items-center gap-3 shrink-0">
+                    <div className="text-right">
+                      <div className={`text-base font-semibold font-mono ${trade.result === 'Win' ? 'text-emerald-500' : trade.result === 'Loss' ? 'text-rose-500' : 'text-zinc-400'}`}>
+                        {trade.result === 'Loss' ? `-$${Math.abs(trade.pnl)}` : trade.result === 'Win' ? `+$${Math.abs(trade.pnl)}` : '$0'}
+                      </div>
+                      {trade.notes && <div className="text-[10px] text-text-muted italic max-w-37.5 truncate mt-0.5">{trade.notes}</div>}
                     </div>
-                    {trade.notes && <div className="text-[10px] text-text-muted italic max-w-37.5 truncate mt-0.5">{trade.notes}</div>}
+
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => {
+                          setSelectedDayDate(null);
+                          handleEdit(trade);
+                        }}
+                        className="text-text-muted hover:text-indigo-500 transition-colors p-2 bg-bg-hover rounded-lg hover:bg-border-hover"
+                        title={t.editTrade}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(trade.id)}
+                        className="text-text-muted hover:text-rose-500 transition-colors p-2 bg-bg-hover rounded-lg hover:bg-rose-500/10"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}

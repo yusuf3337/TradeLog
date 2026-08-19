@@ -49,6 +49,75 @@ export default function TradeDrawer({
 }: TradeDrawerProps) {
   const t = TRANSLATIONS[lang];
 
+  const autoCalculateMetrics = (key: string, value: any) => {
+    const updated = { ...formData, [key]: value };
+
+    const entry = parseFloat(updated.entryPrice);
+    const sl = parseFloat(updated.stopLoss);
+    const tp = parseFloat(updated.takeProfit);
+    const lot = parseFloat(updated.lotSize);
+    const res = updated.result;
+    const sym = (updated.symbol || '').toUpperCase();
+
+    let targetRrVal = updated.targetRr;
+    let rrVal = updated.rr;
+    let pnlVal = updated.pnl;
+
+    if (!isNaN(entry) && !isNaN(sl) && entry > 0 && sl > 0 && entry !== sl) {
+      const slDist = Math.abs(entry - sl);
+
+      if (!isNaN(tp) && tp > 0 && tp !== entry) {
+        const tpDist = Math.abs(tp - entry);
+        const calculatedTarget = Math.round((tpDist / slDist) * 100) / 100;
+        targetRrVal = calculatedTarget.toString();
+      }
+
+      if (res === 'Win') {
+        rrVal = targetRrVal || '1';
+      } else if (res === 'Loss') {
+        rrVal = '1';
+      } else if (res === 'BE') {
+        rrVal = '0';
+      }
+
+      if (!isNaN(lot) && lot > 0) {
+        let priceDiff = 0;
+        if (res === 'Win' && !isNaN(tp) && tp > 0) {
+          priceDiff = Math.abs(tp - entry);
+        } else if (res === 'Loss') {
+          priceDiff = slDist;
+        }
+
+        let contractMultiplier = 1;
+        if (sym.includes('XAU') || sym.includes('GOLD')) {
+          contractMultiplier = 100;
+        } else if (sym.includes('XAG') || sym.includes('SILVER')) {
+          contractMultiplier = 5000;
+        } else if (sym.includes('/') && !sym.includes('BTC') && !sym.includes('ETH') && !sym.includes('USDT')) {
+          const isJpy = sym.includes('JPY');
+          contractMultiplier = isJpy ? 1000 : 100000;
+        }
+
+        const calculatedPnL = Math.round(lot * priceDiff * contractMultiplier);
+
+        if (res === 'Win') {
+          pnlVal = calculatedPnL.toString();
+        } else if (res === 'Loss') {
+          pnlVal = (-calculatedPnL).toString();
+        } else if (res === 'BE') {
+          pnlVal = '0';
+        }
+      }
+    }
+
+    setFormData({
+      ...updated,
+      targetRr: targetRrVal,
+      rr: rrVal,
+      pnl: pnlVal,
+    });
+  };
+
   return (
     <>
       {isDrawerOpen && (
@@ -91,7 +160,7 @@ export default function TradeDrawer({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-[11px] text-text-muted mb-1.5">{t.symbol}</label>
-                <input type="text" placeholder="XAU/USD, EUR/USD, BTC..." value={formData.symbol} onChange={(e) => setFormData({ ...formData, symbol: e.target.value })} className="w-full bg-bg-input border border-border-main rounded-xl px-4 py-3 text-sm text-text-main focus:outline-none focus:border-indigo-500/50 placeholder:text-text-muted/50 font-medium" />
+                <input type="text" placeholder="XAU/USD, EUR/USD, BTC..." value={formData.symbol} onChange={(e) => autoCalculateMetrics('symbol', e.target.value)} className="w-full bg-bg-input border border-border-main rounded-xl px-4 py-3 text-sm text-text-main focus:outline-none focus:border-indigo-500/50 placeholder:text-text-muted/50 font-medium" />
               </div>
               <div>
                 <label className="block text-[11px] text-text-muted mb-1.5">{t.accountType}</label>
@@ -130,22 +199,22 @@ export default function TradeDrawer({
             <div className="grid grid-cols-3 gap-3">
               <div>
                 <label className="block text-[11px] text-text-muted mb-1.5">{t.entryPrice}</label>
-                <input type="number" step="any" placeholder="0.00" value={formData.entryPrice} onChange={(e) => setFormData({ ...formData, entryPrice: e.target.value })} className="w-full bg-bg-input border border-border-main rounded-xl px-3 py-2.5 text-sm text-center text-text-main focus:outline-none focus:border-indigo-500/50 font-mono" />
+                <input type="number" step="any" placeholder="0.00" value={formData.entryPrice} onChange={(e) => autoCalculateMetrics('entryPrice', e.target.value)} className="w-full bg-bg-input border border-border-main rounded-xl px-3 py-2.5 text-sm text-center text-text-main focus:outline-none focus:border-indigo-500/50 font-mono" />
               </div>
               <div>
                 <label className="block text-[11px] text-rose-500/80 mb-1.5">{t.stopLoss}</label>
-                <input type="number" step="any" placeholder="0.00" value={formData.stopLoss} onChange={(e) => setFormData({ ...formData, stopLoss: e.target.value })} className="w-full bg-bg-input border border-rose-500/20 rounded-xl px-3 py-2.5 text-sm text-center text-rose-500 focus:outline-none focus:border-rose-500/50 font-mono" />
+                <input type="number" step="any" placeholder="0.00" value={formData.stopLoss} onChange={(e) => autoCalculateMetrics('stopLoss', e.target.value)} className="w-full bg-bg-input border border-rose-500/20 rounded-xl px-3 py-2.5 text-sm text-center text-rose-500 focus:outline-none focus:border-rose-500/50 font-mono" />
               </div>
               <div>
                 <label className="block text-[11px] text-emerald-500/80 mb-1.5">{t.takeProfit}</label>
-                <input type="number" step="any" placeholder="0.00" value={formData.takeProfit} onChange={(e) => setFormData({ ...formData, takeProfit: e.target.value })} className="w-full bg-bg-input border border-emerald-500/20 rounded-xl px-3 py-2.5 text-sm text-center text-emerald-500 focus:outline-none focus:border-emerald-500/50 font-mono" />
+                <input type="number" step="any" placeholder="0.00" value={formData.takeProfit} onChange={(e) => autoCalculateMetrics('takeProfit', e.target.value)} className="w-full bg-bg-input border border-emerald-500/20 rounded-xl px-3 py-2.5 text-sm text-center text-emerald-500 focus:outline-none focus:border-emerald-500/50 font-mono" />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-[11px] text-text-muted mb-1.5">{t.lotSize}</label>
-                <input type="number" step="any" placeholder="Örn: 0.01, 0.14, 0.80" value={formData.lotSize} onChange={(e) => setFormData({ ...formData, lotSize: e.target.value })} className="w-full bg-bg-input border border-border-main rounded-xl px-4 py-3 text-sm text-text-main focus:outline-none focus:border-indigo-500/50 font-mono" />
+                <input type="number" step="any" placeholder="Örn: 0.01, 0.14, 0.80" value={formData.lotSize} onChange={(e) => autoCalculateMetrics('lotSize', e.target.value)} className="w-full bg-bg-input border border-border-main rounded-xl px-4 py-3 text-sm text-text-main focus:outline-none focus:border-indigo-500/50 font-mono" />
               </div>
               <div>
                 <label className="block text-[11px] text-text-muted mb-1.5">{t.riskPercent}</label>
@@ -164,9 +233,9 @@ export default function TradeDrawer({
             <div>
               <label className="block text-[11px] text-text-muted mb-1.5">{t.tradeResult}</label>
               <div className="grid grid-cols-3 gap-2">
-                <button onClick={() => setFormData({ ...formData, result: 'Win' })} className={`py-3 rounded-xl border text-sm font-medium transition-colors ${formData.result === 'Win' ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-600 dark:text-emerald-400' : 'bg-bg-input border-border-main text-text-muted'}`}>{t.win}</button>
-                <button onClick={() => setFormData({ ...formData, result: 'Loss' })} className={`py-3 rounded-xl border text-sm font-medium transition-colors ${formData.result === 'Loss' ? 'bg-rose-500/10 border-rose-500/50 text-rose-600 dark:text-rose-400' : 'bg-bg-input border-border-main text-text-muted'}`}>{t.loss}</button>
-                <button onClick={() => setFormData({ ...formData, result: 'BE' })} className={`py-3 rounded-xl border text-sm font-medium transition-colors ${formData.result === 'BE' ? 'bg-zinc-500/10 border-zinc-500/50 text-zinc-600 dark:text-zinc-300' : 'bg-bg-input border-border-main text-text-muted'}`}>{t.be}</button>
+                <button onClick={() => autoCalculateMetrics('result', 'Win')} className={`py-3 rounded-xl border text-sm font-medium transition-colors ${formData.result === 'Win' ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-600 dark:text-emerald-400' : 'bg-bg-input border-border-main text-text-muted'}`}>{t.win}</button>
+                <button onClick={() => autoCalculateMetrics('result', 'Loss')} className={`py-3 rounded-xl border text-sm font-medium transition-colors ${formData.result === 'Loss' ? 'bg-rose-500/10 border-rose-500/50 text-rose-600 dark:text-rose-400' : 'bg-bg-input border-border-main text-text-muted'}`}>{t.loss}</button>
+                <button onClick={() => autoCalculateMetrics('result', 'BE')} className={`py-3 rounded-xl border text-sm font-medium transition-colors ${formData.result === 'BE' ? 'bg-zinc-500/10 border-zinc-500/50 text-zinc-600 dark:text-zinc-300' : 'bg-bg-input border-border-main text-text-muted'}`}>{t.be}</button>
               </div>
             </div>
 
